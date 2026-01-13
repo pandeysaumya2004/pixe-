@@ -4,7 +4,7 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import ProjectCard from "./project-card";
 
-export function ProjectGrid({ projects }) {
+export default function ProjectGrid({ projects }) {
   const router = useRouter();
 
   const handleEditProject = (projectId) => {
