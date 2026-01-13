@@ -79,22 +79,79 @@
 //     );
 //   }
 // }
+import { NextResponse } from "next/server";
 import ImageKit from "imagekit";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
-  if (
-    !process.env.IMAGEKIT_PUBLIC_KEY ||
-    !process.env.IMAGEKIT_PRIVATE_KEY ||
-    !process.env.IMAGEKIT_URL_ENDPOINT
-  ) {
-    throw new Error("ImageKit env variables missing");
+  try {
+    // 1. Validate environment variables
+    if (
+      !process.env.IMAGEKIT_PUBLIC_KEY ||
+      !process.env.IMAGEKIT_PRIVATE_KEY ||
+      !process.env.IMAGEKIT_URL_ENDPOINT
+    ) {
+      throw new Error("ImageKit env variables missing");
+    }
+
+    // 2. Initialize ImageKit (inside handler to avoid build crash)
+    const imagekit = new ImageKit({
+      publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+      privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+      urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
+    });
+
+    // 3. Read form data
+    const formData = await req.formData();
+    const file = formData.get("file") as File | null;
+    const fileName = formData.get("fileName") as string | null;
+
+    if (!file) {
+      return NextResponse.json(
+        { error: "No file provided" },
+        { status: 400 }
+      );
+    }
+
+    // 4. Convert file to Buffer
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    // 5. Create unique filename
+    const timestamp = Date.now();
+    const safeFileName =
+      fileName?.replace(/[^a-zA-Z0-9.-]/g, "_") || "upload";
+
+    const uniqueFileName = `${timestamp}_${safeFileName}`;
+
+    // 6. Upload to ImageKit
+    const uploadResponse = await imagekit.upload({
+      file: buffer,
+      fileName: uniqueFileName,
+      folder: "/uploads",
+    });
+
+    // 7. Return response
+    return NextResponse.json({
+      success: true,
+      url: uploadResponse.url,
+      fileId: uploadResponse.fileId,
+      width: uploadResponse.width,
+      height: uploadResponse.height,
+      size: uploadResponse.size,
+      name: uploadResponse.name,
+    });
+  } catch (error: any) {
+    console.error("ImageKit upload error:", error);
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Image upload failed",
+        message: error.message,
+      },
+      { status: 500 }
+    );
   }
-
-  const imagekit = new ImageKit({
-    publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
-    privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
-    urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
-  });
-
-  // upload logic here
 }
