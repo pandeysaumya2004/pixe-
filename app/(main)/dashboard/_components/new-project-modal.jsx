@@ -16,7 +16,9 @@ import { api } from "@/convex/_generated/api";
 import { Crown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { useDropzone } from "react-dropzone/";
+// import { useDropzone } from "react-dropzone/";
+import { useDropzone } from "react-dropzone";
+
 import { Upload } from "lucide-react";
 import { X } from "lucide-react";
 import { Label } from "@radix-ui/react-dropdown-menu";
