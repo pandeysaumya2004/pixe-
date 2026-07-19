@@ -6,7 +6,9 @@ import { Button} from '@/components/ui/button';
 import { Plus, Sparkles } from "lucide-react";
 import { BarLoader } from 'react-spinners';
 import NewProjectModal from './_components/new-project-modal';
-import { ProjectGrid } from './_components/project-grid';
+// import { ProjectGrid } from './_components/project-grid';
+import ProjectGrid from "./_components/project-grid";
+
 
 const Dashboard = () => {
 const [showNewProjectModal, setShowNewProjectModal] = useState(false);
