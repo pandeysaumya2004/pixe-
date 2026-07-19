@@ -515,7 +515,8 @@ import { Button } from "@/components/ui/button";
 import { useCanvas } from "@/context/context";
 
 export default function CropTool() {
-  const { canvas } = useCanvas();
+  const { canvasEditor } = useCanvas();
+  const canvas = canvasEditor;
   const [cropRect, setCropRect] = useState(null);
   const [isCropping, setIsCropping] = useState(false);
 

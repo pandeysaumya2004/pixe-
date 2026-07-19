@@ -116,13 +116,14 @@ import { Loader2, Monitor } from 'lucide-react';
 import { useConvexQuery } from '@/hooks/use-convex-query';
 import { api } from '@/convex/_generated/api';
 import { RingLoader } from 'react-spinners';
-import CanvasEditor from './_components/canvas'; // ✅ FIXED
+import CanvasEditor from './_components/canvas';
 import EditorSidebar from './_components/editor-sidebar';
 import EditorTopbar from './_components/editor-topbar';
 const Editor = () => {
   const params = useParams();
   const projectId = params.projectId;
 
+  const [canvasEditor, setCanvasEditor] = useState(null);
   const [processingMessage, setProcessingMessage] = useState(null);
   const [activeTool, setActiveTool] = useState("resize");
 
@@ -161,7 +162,8 @@ const Editor = () => {
   return (
     <CanvasContext.Provider 
       value={{
-        CanvasEditor, // ✅ now refers to imported component
+        canvasEditor,
+        setCanvasEditor,
         activeTool,
         onToolChange: setActiveTool,
         processingMessage,

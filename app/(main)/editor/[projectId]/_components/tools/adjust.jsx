@@ -176,7 +176,9 @@ const AdjustControls = () => {
           extractedValues[config.key] = Math.round(
             filterValue * (180 / Math.PI)
           );
-        } else extractFilterValues[config.key] = Math.round(filterValue * 100);
+        } else {
+          extractedValues[config.key] = Math.round(filterValue * 100);
+        }
       }
 
     });

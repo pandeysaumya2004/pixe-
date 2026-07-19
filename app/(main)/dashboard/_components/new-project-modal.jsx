@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import {
   Dialog,
@@ -16,15 +18,15 @@ import { api } from "@/convex/_generated/api";
 import { Crown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { useDropzone } from "react-dropzone/";
+import { useDropzone } from "react-dropzone";
 import { Upload } from "lucide-react";
 import { X } from "lucide-react";
-import { Label } from "@radix-ui/react-dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { ImageIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { UpgradeModal } from "@/components/upgrade-modal";
+import { Label } from "@/components/ui/label";
 
 
 const NewProjectModal = ({ isOpen, onClose }) => {
@@ -33,6 +35,9 @@ const NewProjectModal = ({ isOpen, onClose }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [width, setWidth] = useState(1024);
+  const [height, setHeight] = useState(768);
+  const [aspectRatio, setAspectRatio] = useState("custom");
   const router = useRouter();
   
   
@@ -49,6 +54,14 @@ const NewProjectModal = ({ isOpen, onClose }) => {
   const { mutate: CreateProject } = useConvexMutation(api.projects.create);
   const currentProjectCount = projects?.length || 0;
   const canCreate = canCreateProject(currentProjectCount);
+
+  const presetRatios = {
+    custom: null,
+    "1:1": { width: 1080, height: 1080 },
+    "16:9": { width: 1920, height: 1080 },
+    "9:16": { width: 1080, height: 1920 },
+    "4:5": { width: 1080, height: 1350 },
+  };
 
   const onDrop = (acceptedFiles) => {
     const file = acceptedFiles[0];
@@ -71,31 +84,46 @@ const NewProjectModal = ({ isOpen, onClose }) => {
     maxSize: 20 * 1024 * 1024,
   });
 
-  const handleCreateProject = async() => {
-   if (!canCreate) {
-    setShowUpgradeModal(true);
-    return;
-   }
+  const handleAspectRatioChange = (ratio) => {
+    setAspectRatio(ratio);
+    const preset = presetRatios[ratio];
 
-   if (!selectedFile || !projectTitle.trim()) {
-    toast.error("Please select an image and enter a projects title");
-    return;
-   }
+    if (preset) {
+      setWidth(preset.width);
+      setHeight(preset.height);
+    }
+  };
 
-   setIsUploading(true);
+  const handleCreateProject = async () => {
+    if (!canCreate) {
+      setShowUpgradeModal(true);
+      return;
+    }
 
-   try {
-    const formData = new FormData();
-    formData.append("file",selectedFile);
-    formData.append("fileName", selectedFile.name);
+    if (!selectedFile || !projectTitle.trim()) {
+      toast.error("Please select an image and enter a project title");
+      return;
+    }
 
-    const uploadResponse = await fetch("/api/imagekit/upload",{
-     method: "POST",
-     body: formData,
-    });
+    if (width <= 0 || height <= 0) {
+      toast.error("Please enter a valid width and height.");
+      return;
+    }
 
-    const uploadData = await uploadResponse.json();
-     if (!uploadData.success) {
+    setIsUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      formData.append("fileName", selectedFile.name);
+
+      const uploadResponse = await fetch("/api/imagekit/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const uploadData = await uploadResponse.json();
+      if (!uploadData.success) {
         throw new Error(uploadData.error || "Failed to upload image");
       }
 
@@ -105,22 +133,19 @@ const NewProjectModal = ({ isOpen, onClose }) => {
         originalImageUrl: uploadData.url,
         currentImageUrl: uploadData.url,
         thumbnailUrl: uploadData.thumbnailUrl,
-        width: uploadData.width || 800,
-        height: uploadData.height || 600,
+        width,
+        height,
         canvasState: null,
       });
+
       toast.success("Project created successfully!");
-      router.push(`/editor/${projectId}`)
-  }
-   catch (error) {
-    console.error("Error creating project:", error);
-    toast.error(
-      error.message || "Failed to create project. Please try again."
-    );
-    
-   } finally {
-    setIsUploading(false);
-   }
+      router.push(`/editor/${projectId}`);
+    } catch (error) {
+      console.error("Error creating project:", error);
+      toast.error(error.message || "Failed to create project. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -150,8 +175,8 @@ const NewProjectModal = ({ isOpen, onClose }) => {
                   </div>
                   <div>
                     {currentProjectCount === 2
-                      ? "This will be your last free project. Upgrade to Pixexel Pro for unlimited projects."
-                      : "Free plan is limited to 3 projects. Upgrade to pixxel Pro to create more projects."}
+                      ? "This will be your last free project. Upgrade to Pixxel Pro for unlimited projects."
+                      : "Free plan is limited to 3 projects. Upgrade to Pixxel Pro to create more projects."}
                   </div>
                 </AlertDescription>
               </Alert>
@@ -170,15 +195,15 @@ const NewProjectModal = ({ isOpen, onClose }) => {
                 <input {...getInputProps()} />
                 <Upload className="h-12 w-12 text-white/50 mx-auto mb-4" />
                 <h3 className="text-xl font-semibold text-white mb-2">
-                  {isDragActive ? "Drop your image here" : "Upload to Image"}
+                  {isDragActive ? "Drop your image here" : "Upload your image"}
                 </h3>
                 <p className="text-white/70 mb-4">
                   {canCreate
-                    ? "Drag and Drop your image, or click to browse"
+                    ? "Drag and drop an image, or click to browse"
                     : "Upgrade to Pro to create more projects"}
-                </p>{" "}
+                </p>
                 <p className="text-sm text-white/50">
-                  Supports PNG, JPG, WEBP up to 20MB
+                  Supports PNG, JPG, WEBP, GIF up to 20MB
                 </p>
               </div>
             ) : (
@@ -202,28 +227,82 @@ const NewProjectModal = ({ isOpen, onClose }) => {
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="project-title" className="text-white">
-                    Project Title
-                  </Label>
-                  <Input
-                    id="project-title"
-                    type="text"
-                    value={projectTitle}
-                    onChange={(e) => setProjectTitle(e.target.value)}
-                    placeholder="Enter project name..."
-                    className="bg-slate-700 border-white/20 text-white placeholder-white/50 focus:border-cyan-400 focus:ring-cyan-400"
-                  />
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="project-title" className="text-white">
+                      Project Title
+                    </Label>
+                    <Input
+                      id="project-title"
+                      type="text"
+                      value={projectTitle}
+                      onChange={(e) => setProjectTitle(e.target.value)}
+                      placeholder="Enter project name..."
+                      className="bg-slate-700 border-white/20 text-white placeholder-white/50 focus:border-cyan-400 focus:ring-cyan-400"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="project-size" className="text-white">
+                      Canvas Size
+                    </Label>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <Input
+                        id="project-width"
+                        type="number"
+                        value={width}
+                        min={1}
+                        onChange={(e) => {
+                          setWidth(Number(e.target.value));
+                          setAspectRatio("custom");
+                        }}
+                        placeholder="Width"
+                        className="bg-slate-700 border-white/20 text-white placeholder-white/50 focus:border-cyan-400 focus:ring-cyan-400"
+                      />
+                      <Input
+                        id="project-height"
+                        type="number"
+                        value={height}
+                        min={1}
+                        onChange={(e) => {
+                          setHeight(Number(e.target.value));
+                          setAspectRatio("custom");
+                        }}
+                        placeholder="Height"
+                        className="bg-slate-700 border-white/20 text-white placeholder-white/50 focus:border-cyan-400 focus:ring-cyan-400"
+                      />
+                    </div>
+                  </div>
                 </div>
+
+                <div className="space-y-3 mt-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm text-white/70">Aspect Presets</p>
+                    <span className="text-xs text-white/50">{aspectRatio}</span>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    {Object.keys(presetRatios).map((ratio) => (
+                      <Button
+                        key={ratio}
+                        variant={aspectRatio === ratio ? "secondary" : "ghost"}
+                        size="sm"
+                        onClick={() => handleAspectRatioChange(ratio)}
+                        className="justify-center"
+                      >
+                        {ratio === "custom" ? "Custom" : ratio}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="bg-slate-700/50 rounded-lg p-4 mt-4">
                   <div className="flex items-center gap-3">
                     <ImageIcon className="h-5 w-5 text-cyan-400" />
                     <div>
-                      <p className="text-white font-medium">
-                        {selectedFile.name}
-                      </p>
+                      <p className="text-white font-medium">{selectedFile.name}</p>
                       <p className="text-white/70 text-sm">
-                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • {width} × {height}
                       </p>
                     </div>
                   </div>

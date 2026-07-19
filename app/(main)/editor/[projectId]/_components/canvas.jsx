@@ -318,9 +318,9 @@ const CanvasEditor = ({ project }) => {
       canvas.calcOffset();
       canvas.requestRenderAll();
 
-      // if (typeof setCanvasEditor === "function") {
-      //   setCanvasEditor(canvas);
-      // }
+      if (typeof setCanvasEditor === "function") {
+        setCanvasEditor(canvas);
+      }
 
       setTimeout(() => {
         window.dispatchEvent(new Event("resize"));
